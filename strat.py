@@ -1,3 +1,4 @@
+import signal
 import schedule
 import threading
 from time import sleep
@@ -61,6 +62,9 @@ def main() -> None:
     """
 
     bot = FundingBot()
+
+    signal.signal(signal.SIGTERM, bot.exit)
+    signal.signal(signal.SIGINT, bot.exit)
 
     schedule.every().day.at('23:50').do(half_funding, bot)
     schedule.every().day.at('04:01').do(funding_over, bot)

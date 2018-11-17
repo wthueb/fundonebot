@@ -1,4 +1,3 @@
-import atexit
 from datetime import datetime, timedelta
 import os
 import sys
@@ -17,8 +16,6 @@ class FundingBot:
         
         self.exchange = ExchangeInterface()
         
-        atexit.register(self.exit)
-
         self.start_balance = self.exchange.get_margin()['marginBalance'] / 100000000
 
         self.loop_count = 1
@@ -48,7 +45,7 @@ class FundingBot:
         self.logger.info('current position: %i USD' % current_quantity)
 
         if current_quantity:
-            average_entry_price = position['avgCostPrice']
+            average_entry_price = position['avgEntryPrice']
 
             self.logger.info(' ~ average entry price: %.2f USD' % average_entry_price)
 
@@ -56,7 +53,7 @@ class FundingBot:
             
             self.logger.info(' ~ original position value: %.6f XBT' % original_value)
 
-            current_value = self.exchange.calc_delta()['spot']
+            current_value = current_quantity / ticker['buy' if current_quantity > 0 else 'sell']
 
             self.logger.info(' ~ current position value: %.6f XBT' % current_value)
 
@@ -64,7 +61,7 @@ class FundingBot:
 
             self.logger.info(' ~ position value delta: %.6f XBT' % value_delta)
 
-            profit = value_delta * (-ticker['buy'] if current_quantity < 0 else ticker['sell'])
+            profit = value_delta * (-ticker['buy'] if current_quantity < 0 else -ticker['sell'])
 
             self.logger.info(' ~ position profit: %.2f USD' % profit)
         
@@ -149,20 +146,23 @@ class FundingBot:
 
         if quantity:
             if not self.limits_exist:
-                avg_price = position['avgCostPrice']
+                avg_price = position['avgEntryPrice']
+
+                limit_delta = avg_price * settings.STOP_LIMIT_MULTIPLIER
+                market_delta = avg_price * settings.STOP_MULTIPLIER
 
                 if quantity > 0:
-                    limit_stopPx = math.to_nearest(avg_price - avg_price*.015, .5)
+                    limit_stopPx = math.to_nearest(avg_price - limit_delta, .5)
                     limit_stop_price = limit_stopPx + .5
 
-                    market_stopPx = math.to_nearest(avg_price - avg_price*.0175, .5)
+                    market_stopPx = math.to_nearest(avg_price - market_delta, .5)
 
                     side = 'Sell'
                 else:
-                    limit_stopPx = math.to_nearest(avg_price + avg_price*.015, .5)
+                    limit_stopPx = math.to_nearest(avg_price + limit_delta, .5)
                     limit_stop_price = limit_stopPx - .5
 
-                    market_stopPx = math.to_nearest(avg_price + avg_price*.0175, .5)
+                    market_stopPx = math.to_nearest(avg_price + market_delta, .5)
 
                     side = 'Buy'
 
