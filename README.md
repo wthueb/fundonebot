@@ -6,7 +6,7 @@ based on funding rate, with option for hedges in between positions
 ### usage:
 - install requirements.txt via pip
 - change times in strat.py:main() to your local timezone (default is UTC)
-- setup settings.py with your api key and secret
+- setup settings.py from settings_example.py with your api key and secret
 	- modify variables in settings.py to desired values
 - `python3 strat.py`
 

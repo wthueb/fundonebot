@@ -1,0 +1,26 @@
+import logging
+
+BASE_URL = 'https://www.bitmex.com/api/v1/'
+
+API_KEY = ''
+API_SECRET = ''
+
+SYMBOL = 'XBTUSD'
+
+TRADE_QUANTITY = 100
+
+HEDGE = True
+HEDGE_SIDE = 'Sell'
+HEDGE_MULTIPLIER = 1
+
+LOOP_INTERVAL = 1
+
+API_REST_INTERVAL = 3
+
+TIMEOUT = 10
+
+LOG_LEVEL = logging.INFO
+
+ORDERID_PREFIX = 'mm_'
+
+CONTRACTS = ['XBTUSD']
