@@ -21,6 +21,7 @@ class FundingBot:
         self.exchange = ExchangeInterface()
         
         signal.signal(signal.SIGTERM, self.exit)
+        signal.signal(signal.SIGINT, self.exit)
 
         self.start_balance = self.exchange.get_margin()['marginBalance'] / 100000000
 
