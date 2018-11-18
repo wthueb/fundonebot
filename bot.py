@@ -133,12 +133,13 @@ class FundingBot:
                     new_price = self.get_price('sell')
 
             if to_change:
-                to_amend.append({'orderID': order['orderID'],
-                                 'orderQty': order['leavesQty'],
-                                 'price': new_price, 'side': order['side']})
+                to_amend.append({'orderID': order['orderID'], 'price': new_price})
 
                 self.logger.info('amending order %i from %.2f to %.2f' %
                             (order['leavesQty'], order['price'], new_price))
+        
+        if to_amend:
+            self._amend_orders(to_amend)
 
         position = self.exchange.get_position()
 
@@ -182,9 +183,6 @@ class FundingBot:
                 self._cancel_orders(to_cancel)
 
             self.limits_exist = False
-
-        if to_amend:
-            self._amend_orders(to_amend)
 
     def enter_position(self, side: str, trade_quantity: int, market=False) -> None:
         if market:
