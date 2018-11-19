@@ -42,6 +42,8 @@ class FundingBot:
 
         current_quantity = position['currentQty']
         
+        self.logger.info('funding rate: %.4f%%' % (self.get_funding_rate() * 100))
+        
         self.logger.info('current position: %i USD' % current_quantity)
 
         if current_quantity:
@@ -61,7 +63,7 @@ class FundingBot:
 
             self.logger.info(' ~ position value delta: %.6f XBT' % value_delta)
 
-            profit = value_delta * (-ticker['buy'] if current_quantity < 0 else -ticker['sell'])
+            profit = value_delta * (ticker['buy'] if current_quantity < 0 else ticker['sell'])
 
             self.logger.info(' ~ position profit: %.2f USD' % profit)
         
@@ -92,7 +94,7 @@ class FundingBot:
                     self.logger.info(' ~ stop order: close, stop price: %.2f USD' %
                                      order['stopPx'])
         
-        sys.stdout.write('----------\n')
+        sys.stdout.write('-' * 20 + '\n')
         sys.stdout.flush()
 
     def get_price(self, side: str) -> float:

@@ -24,7 +24,7 @@ def half_funding(bot: FundingBot) -> None:
 
     funding_rate = bot.get_funding_rate()
 
-    logger.info('funding rate: %.6f' % funding_rate)
+    logger.info('funding rate: %.4f%%' % (funding_rate * 100))
 
     if funding_rate < 0:
         side = 'Buy'
@@ -79,7 +79,12 @@ def main() -> None:
     
     sched.start()
     
-    bot.run_loop()
+    try:
+        bot.run_loop()
+    except Exception as e:
+        logger.error('bot exiting with exception: %s' % str(e))
+
+        bot.exit()
 
 
 if __name__ == '__main__':
