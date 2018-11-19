@@ -63,7 +63,7 @@ class FundingBot:
 
             self.logger.info(' ~ position value delta: %.6f XBT' % value_delta)
 
-            profit = value_delta * (ticker['buy'] if current_quantity < 0 else ticker['sell'])
+            profit = -value_delta * (ticker['buy'] if current_quantity < 0 else ticker['sell'])
 
             self.logger.info(' ~ position profit: %.2f USD' % profit)
         
