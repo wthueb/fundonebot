@@ -45,12 +45,6 @@ def funding_over(bot: FundingBot) -> None:
         bot.hedge(settings.HEDGE_SIDE, market=False)
 
 
-def run_scheduled() -> None:
-    while True:
-        schedule.run_pending()
-        sleep(1)
-
-
 def main() -> None:
     """place bitmex orders based on current funding rate
 
@@ -73,10 +67,13 @@ def main() -> None:
     schedule.every().day.at('15:50').do(half_funding, bot)
     schedule.every().day.at('20:01').do(funding_over, bot)
 
-    sched = threading.Thread(target=run_scheduled)
-
-    sched.daemon = True
+    def run_scheduled() -> None:
+        while True:
+            schedule.run_pending()
+            sleep(1)
     
+    sched = threading.Thread(target=run_scheduled)
+    sched.daemon = True
     sched.start()
     
     try:
