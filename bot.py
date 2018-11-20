@@ -25,6 +25,9 @@ class FundingBot:
         self.last_request = datetime.now()
 
         self.limits_exist = False
+        
+        self.hedge_exists = False
+        self.could_hedge = self.exchange.get_position()['currentQty'] == 0
 
     def sanity_check(self) -> None:
         self.exchange.check_if_orderbook_empty()
@@ -186,6 +189,12 @@ class FundingBot:
 
             self.limits_exist = False
 
+            if settings.HEDGE and not self.hedge_exists and self.could_hedge:
+                self.hedge(settings.HEDGE_SIDE, market=False)
+
+                self.hedge_exists = True
+
+
     def enter_position(self, side: str, trade_quantity: int, market=False) -> None:
         if market:
             self.logger.info('entering a position at market (%.2f): quantity: %i, side: %s' %
@@ -201,6 +210,8 @@ class FundingBot:
             order = {'price': price, 'orderQty': trade_quantity, 'side': side}
 
         self._create_orders([order])
+
+        self.could_hedge = False
 
     def exit_position(self, market=False, wait_for_fill=False) -> None:
         self.logger.info('exiting current position. at market: %s' %
@@ -237,6 +248,9 @@ class FundingBot:
                 if position['currentQty'] == 0:
                     break
 
+        self.hedge_exists = False
+        self.could_hedge = True
+
     def hedge(self, side: str, market=False) -> None:
         current_balance = self.exchange.get_margin()['marginBalance'] / 100000000
 
@@ -260,7 +274,7 @@ class FundingBot:
             order = {'price': price, 'orderQty': quantity, 'side': side}
 
         self._create_orders([order])
-
+        
     def cancel_open_orders(self) -> None:
         self.logger.info('cancelling all open orders')
 

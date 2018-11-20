@@ -36,13 +36,10 @@ def half_funding(bot: FundingBot) -> None:
 
 def funding_over(bot: FundingBot) -> None:
     """funding is over, exit all positions"""
+
+    sleep(3)
     
     bot.exit_position(market=False, wait_for_fill=True)
-
-    bot.cancel_open_orders()
-
-    if settings.HEDGE:
-        bot.hedge(settings.HEDGE_SIDE, market=False)
 
 
 def main() -> None:
@@ -61,11 +58,11 @@ def main() -> None:
     signal.signal(signal.SIGINT, bot.exit)
 
     schedule.every().day.at('23:50').do(half_funding, bot)
-    schedule.every().day.at('04:01').do(funding_over, bot)
+    schedule.every().day.at('04:00').do(funding_over, bot)
     schedule.every().day.at('07:50').do(half_funding, bot)
-    schedule.every().day.at('12:01').do(funding_over, bot)
+    schedule.every().day.at('12:00').do(funding_over, bot)
     schedule.every().day.at('15:50').do(half_funding, bot)
-    schedule.every().day.at('20:01').do(funding_over, bot)
+    schedule.every().day.at('20:00').do(funding_over, bot)
 
     def run_scheduled() -> None:
         while True:
