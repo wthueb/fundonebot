@@ -181,6 +181,8 @@ class FundingBot:
                 self._create_orders([limit_stop, market_stop])
 
                 self.limits_exist = True
+            
+            self.could_hedge = True
         else:
             to_cancel = [o for o in open_orders if o['ordType'] in ['StopLimit', 'Stop']]
 
