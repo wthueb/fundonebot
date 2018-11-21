@@ -310,6 +310,10 @@ class FundingBot:
 
                 self.reload()
 
+                return
+
+            self.sanity_check()
+
             if (self.loop_count*settings.LOOP_INTERVAL) % 10 == 0:
                 self.print_status()
                 
@@ -317,7 +321,6 @@ class FundingBot:
 
             self.loop_count += 1
 
-            self.sanity_check()
             self.monitor()
             
             sleep(settings.LOOP_INTERVAL)
