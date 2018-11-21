@@ -225,6 +225,10 @@ class FundingBot:
 
         if quantity == 0:
             self.logger.info(' ~ not currently in a position')
+        
+            self.hedge_exists = False
+            self.could_hedge = True
+            
             return
 
         if quantity < 0:
