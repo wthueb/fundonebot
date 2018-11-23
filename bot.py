@@ -155,7 +155,7 @@ class FundingBot:
         quantity = position['currentQty']
 
         if quantity:
-            if not self.limits_exist:
+            if not self.limits_exist and not self.hedge_exists:
                 avg_price = position['avgEntryPrice']
 
                 limit_delta = avg_price * settings.STOP_LIMIT_MULTIPLIER
@@ -216,8 +216,6 @@ class FundingBot:
 
         self._create_orders([order])
 
-        self.could_hedge = False
-
     def exit_position(self, market=False, wait_for_fill=False) -> None:
         self.logger.info('exiting current position. at market: %s' %
                          ('true' if market else 'false'))
@@ -250,7 +248,7 @@ class FundingBot:
 
         if wait_for_fill and not market:
             while True:
-                sleep(10)
+                sleep(1)
 
                 postition = self.exchange.get_position()
 
