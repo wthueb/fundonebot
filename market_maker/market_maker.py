@@ -38,7 +38,7 @@ class ExchangeInterface:
     def cancel_order(self, order):
         tickLog = self.get_instrument()['tickLog']
         
-        if order['execInst'] != 'Close':
+        if 'Close' not in order['execInst']:
             logger.info("Canceling: %s %d @ %.*f" % (order['side'], order['orderQty'], tickLog, order['price']))
         elif order['ordType'] == 'Stop':
             logger.info("Canceling: Stop Close @ %.*f" % (tickLog, order['stopPx']))
@@ -69,7 +69,7 @@ class ExchangeInterface:
         orders = self.bitmex.http_open_orders()
 
         for order in orders:
-            if order['execInst'] != 'Close':
+            if 'Close' not in order['execInst']:
                 if 'Stop' not in order['ordType']:
                     logger.info("Canceling: %s %d @ %.*f" % (order['side'], order['orderQty'], tickLog, order['price']))
                 else:
