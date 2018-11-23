@@ -18,6 +18,8 @@ def half_funding(bot: FundingBot) -> None:
     if funding is positive, go short
     """
 
+    bot.could_hedge = False
+
     bot.exit_position(market=False, wait_for_fill=True)
 
     bot.cancel_open_orders()

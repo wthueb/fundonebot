@@ -185,7 +185,7 @@ class FundingBot:
                 self._create_orders([limit_stop, market_stop])
 
                 self.limits_exist = True
-            
+
             self.could_hedge = True
         else:
             to_cancel = [o for o in open_orders if o['ordType'] in ['StopLimit', 'Stop']]
@@ -215,6 +215,8 @@ class FundingBot:
             order = {'price': price, 'orderQty': trade_quantity, 'side': side}
 
         self._create_orders([order])
+
+        self.could_hedge = False
 
     def exit_position(self, market=False, wait_for_fill=False) -> None:
         self.logger.info('exiting current position. at market: %s' %
