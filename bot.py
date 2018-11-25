@@ -28,7 +28,7 @@ class FundingBot:
 
         position = self.exchange.get_position()['currentQty']
         
-        self.hedge_exists = position != 0 and position != settings.TRADE_QUANTITY
+        self.hedge_exists = position != 0 and abs(position) != settings.TRADE_QUANTITY
         self.could_hedge = position == 0
 
         self.cancel_open_orders()
@@ -271,7 +271,7 @@ class FundingBot:
 
         price = ticker[side.lower()]
 
-        quantity = int(current_balance * settings.HEDGE_MULTIPLIER * price)
+        quantity = int((current_balance-.1) * settings.HEDGE_MULTIPLIER * price)
 
         self.logger.info('entering a hedge (at market: %s): %i @ %.2f' %
                     ('true' if market else 'false', quantity, price))
@@ -336,8 +336,6 @@ class FundingBot:
     def reload(self) -> None:
         self.logger.info('reloading data connection...')
 
-        sleep(3)
-        
         self.exchange = ExchangeInterface()
 
         sleep(3)
