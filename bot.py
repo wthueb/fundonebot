@@ -176,13 +176,22 @@ class FundingBot:
 
                     side = 'Buy'
 
-                limit_stop = {'stopPx': limit_stopPx, 'price': limit_stop_price,
-                              'execInst': 'LastPrice,Close', 'ordType': 'StopLimit', 'side': side}
+                orders = []
 
-                market_stop = {'stopPx': market_stopPx, 'execInst': 'LastPrice,Close',
-                               'ordType': 'Stop', 'side': side}
+                if settings.STOP_LIMIT_MULTIPLIER > 0:
+                    limit_stop = {'stopPx': limit_stopPx, 'price': limit_stop_price,
+                                  'execInst': 'LastPrice,Close', 'ordType': 'StopLimit', 'side': side}
+
+                    orders.append(limit_stop)
+
+                if settings.STOP_MULTIPLIER > 0:
+                    market_stop = {'stopPx': market_stopPx, 'execInst': 'LastPrice,Close',
+                                   'ordType': 'Stop', 'side': side}
+
+                    orders.append(market_stop)
                 
-                self._create_orders([limit_stop, market_stop])
+                if orders:
+                    self._create_orders(orders)
 
                 self.limits_exist = True
 
