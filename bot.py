@@ -18,6 +18,8 @@ class FundingBot:
         
         self.start_balance = self.exchange.get_margin()['marginBalance'] / 100000000
 
+        self.tick_size = self.exchange.get_instrument()['tickSize']
+
         self.loop_count = 1
 
         self.start_time = datetime.now().isoformat(timespec='seconds') + 'Z'
@@ -60,15 +62,15 @@ class FundingBot:
 
             original_value = current_quantity / average_entry_price
             
-            self.logger.info(' ~ original position value: %.6f XBT' % original_value)
+            self.logger.info(' ~ original position value: %.6f %s' % (original_value, settings.SYMBOL[:3]))
 
             current_value = current_quantity / ticker['buy' if current_quantity > 0 else 'sell']
 
-            self.logger.info(' ~ current position value: %.6f XBT' % current_value)
+            self.logger.info(' ~ current position value: %.6f %s' % (current_value, settings.SYMBOL[:3]))
 
             value_delta = current_value - original_value
 
-            self.logger.info(' ~ position value delta: %.6f XBT' % value_delta)
+            self.logger.info(' ~ position value delta: %.6f %s' % (value_delta, settings.SYMBOL[:3]))
 
             profit = -value_delta * (ticker['buy'] if current_quantity < 0 else ticker['sell'])
 
@@ -111,9 +113,9 @@ class FundingBot:
             raise ValueError('invalid side passed to get_price: %s' % side)
 
         if side.lower() == 'buy':
-            return ticker['sell'] - .5
+            return ticker['sell'] - self.tick_size
         else:
-            return ticker['buy'] + .5
+            return ticker['buy'] + self.tick_size
 
     def monitor(self) -> None:
         """if the price moves negatively 1.5% away from a position, exit the position
@@ -162,17 +164,17 @@ class FundingBot:
                 market_delta = avg_price * settings.STOP_MULTIPLIER
 
                 if quantity > 0:
-                    limit_stopPx = math.to_nearest(avg_price - limit_delta, .5)
-                    limit_stop_price = limit_stopPx + .5
+                    limit_stopPx = math.to_nearest(avg_price - limit_delta, self.tick_size)
+                    limit_stop_price = limit_stopPx + self.tick_size
 
-                    market_stopPx = math.to_nearest(avg_price - market_delta, .5)
+                    market_stopPx = math.to_nearest(avg_price - market_delta, self.tick_size)
 
                     side = 'Sell'
                 else:
-                    limit_stopPx = math.to_nearest(avg_price + limit_delta, .5)
-                    limit_stop_price = limit_stopPx - .5
+                    limit_stopPx = math.to_nearest(avg_price + limit_delta, self.tick_size)
+                    limit_stop_price = limit_stopPx - self.tick_size
 
-                    market_stopPx = math.to_nearest(avg_price + market_delta, .5)
+                    market_stopPx = math.to_nearest(avg_price + market_delta, self.tick_size)
 
                     side = 'Buy'
 
