@@ -329,7 +329,7 @@ class FundingBot:
 
                 self.reload()
 
-                return
+                continue
 
             self.sanity_check()
 
