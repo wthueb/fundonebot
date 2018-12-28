@@ -5,3 +5,4 @@ __pycache__/
 /*.ini
 
 /settings.py
+/users.db
