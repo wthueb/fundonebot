@@ -1,9 +1,11 @@
+# TODO: refactor! models.py, views.py, etc
+
 from datetime import datetime
 
 from flask import Flask, url_for, redirect, request
 import flask_admin as admin
 from flask_admin import helpers, expose
-from flask_admin.contrib import sqla
+from flask_admin.contrib.sqla import ModelView
 import flask_login as login
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -54,6 +56,53 @@ class User(db.Model):
         return self.username
 
 
+class UserView(ModelView):
+    column_list = ('id', 'login', 'last_login')
+
+    form_create_rules = ('login', 'password')
+
+    can_edit = False
+
+    def is_accessible(self):
+        return login.current_user.is_authenticated
+
+    def on_model_change(self, form, model, is_created):
+        model.password = generate_password_hash(model.password)
+
+
+class HomeView(admin.AdminIndexView):
+    @expose('/')
+    def index(self):
+        if not login.current_user.is_authenticated:
+            return redirect(url_for('.login_view'))
+        
+        return super().index()
+
+    @expose('/login/', methods=('GET', 'POST'))
+    def login_view(self):
+        form = LoginForm(request.form)
+
+        if helpers.validate_form_on_submit(form):
+            user = form.get_user()
+
+            user.update_login_time()
+
+            login.login_user(user)
+
+        if login.current_user.is_authenticated:
+            return redirect(url_for('.index'))
+
+        self._template_args['form'] = form
+
+        return super().index()
+
+    @expose('/logout/')
+    def logout_view(self):
+        login.logout_user()
+
+        return redirect(url_for('.login_view'))
+
+
 class LoginForm(form.Form):
     login = fields.StringField(validators=[validators.data_required()])
     password = fields.PasswordField(validators=[validators.data_required()])
@@ -80,48 +129,6 @@ def init_login():
         return db.session.query(User).get(user_id)
 
 
-class ModelView(sqla.ModelView):
-    column_list = {'login', 'last_login'}
-
-    def is_accessible(self):
-        return login.current_user.is_authenticated
-
-    def on_model_change(self, form, model, is_created):
-        model.password = generate_password_hash(model.password)
-
-
-class AdminIndexView(admin.AdminIndexView):
-    @expose('/')
-    def index(self):
-        if not login.current_user.is_authenticated:
-            return redirect(url_for('.login_view'))
-        return super(AdminIndexView, self).index()
-
-    @expose('/login/', methods=('GET', 'POST'))
-    def login_view(self):
-        form = LoginForm(request.form)
-
-        if helpers.validate_form_on_submit(form):
-            user = form.get_user()
-
-            user.update_login_time()
-
-            login.login_user(user)
-
-        if login.current_user.is_authenticated:
-            return redirect(url_for('.index'))
-
-        self._template_args['form'] = form
-
-        return super(AdminIndexView, self).index()
-
-    @expose('/logout/')
-    def logout_view(self):
-        login.logout_user()
-
-        return redirect(url_for('.index'))
-
-
 @app.route('/')
 def index():
     return redirect('/admin/')
@@ -129,23 +136,22 @@ def index():
 
 init_login()
 
-admin = admin.Admin(app, 'fundonebot', index_view=AdminIndexView(), base_template='master.html')
+admin = admin.Admin(app, 'fundonebot', index_view=HomeView(), base_template='master.html')
 
-admin.add_view(ModelView(User, db.session))
-
-
-def build_db():
-    db.drop_all()
-    db.create_all()
-
-    user = User(login='wilhueb', password='pbkdf2:sha256:50000$ZP6YHJuy$ab2e65b529e6c6ce9de44309b9c45dee7bff6223b0f89416a9a0d93dc58be0ca', last_login=datetime.now().isoformat(timespec='seconds') + 'Z')
-
-    db.session.add(user)
-
-    db.session.commit()
+admin.add_view(UserView(User, db.session))
 
 
 if __name__ == '__main__':
+    def build_db():
+        db.drop_all()
+        db.create_all()
+
+        user = User(login='wilhueb', password='pbkdf2:sha256:50000$ZP6YHJuy$ab2e65b529e6c6ce9de44309b9c45dee7bff6223b0f89416a9a0d93dc58be0ca', last_login=datetime.now().isoformat(timespec='seconds') + 'Z')
+
+        db.session.add(user)
+
+        db.session.commit()
+
     import os
 
     app_dir = os.path.realpath(os.path.dirname(__file__))
