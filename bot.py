@@ -347,7 +347,15 @@ class FundingBot:
     def reload(self) -> None:
         self.logger.info('reloading data connection...')
 
-        self.exchange = ExchangeInterface()
+        try:
+            self.exchange = ExchangeInterface()
+        except Exception as e:
+            self.logger.error(e)
+            self.logger.error('attempting to reload in 3 seconds...')
+
+            sleep(3)
+
+            self.reload()
 
         sleep(3)
 
