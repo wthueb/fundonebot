@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta
-import os
 import sys
 from time import sleep
 
@@ -22,9 +21,9 @@ class FundingBot:
 
         self.loop_count = 1
 
-        self.start_time = datetime.now().isoformat(timespec='seconds') + 'Z'
+        self.start_time = datetime.utcnow().isoformat(timespec='seconds') + 'Z'
 
-        self.last_request = datetime.now()
+        self.last_request = datetime.utcnow()
 
         self.limits_exist = False
 
@@ -62,15 +61,18 @@ class FundingBot:
 
             original_value = current_quantity / average_entry_price
             
-            self.logger.info(' ~ original position value: %.6f %s' % (original_value, settings.SYMBOL[:3]))
+            self.logger.info(' ~ original position value: %.6f %s' %
+                    (original_value, settings.SYMBOL[:3]))
 
             current_value = current_quantity / ticker['buy' if current_quantity > 0 else 'sell']
 
-            self.logger.info(' ~ current position value: %.6f %s' % (current_value, settings.SYMBOL[:3]))
+            self.logger.info(' ~ current position value: %.6f %s' %
+                    (current_value, settings.SYMBOL[:3]))
 
             value_delta = current_value - original_value
 
-            self.logger.info(' ~ position value delta: %.6f %s' % (value_delta, settings.SYMBOL[:3]))
+            self.logger.info(' ~ position value delta: %.6f %s' %
+                    (value_delta, settings.SYMBOL[:3]))
 
             profit = -value_delta * (ticker['buy'] if current_quantity < 0 else ticker['sell'])
 
@@ -182,7 +184,8 @@ class FundingBot:
 
                 if settings.STOP_LIMIT_MULTIPLIER > 0:
                     limit_stop = {'stopPx': limit_stopPx, 'price': limit_stop_price,
-                                  'execInst': 'LastPrice,Close', 'ordType': 'StopLimit', 'side': side}
+                                  'execInst': 'LastPrice,Close', 'ordType': 'StopLimit',
+                                  'side': side}
 
                     orders.append(limit_stop)
 
@@ -359,11 +362,6 @@ class FundingBot:
 
         sleep(3)
 
-    def restart(self) -> None:
-        self.logger.info('restarting funding bot...')
-
-        os.execv(sys.executable, [sys.executable] + sys.argv)
-
     def get_instrument(self):
         return self.exchange.bitmex.instrument(symbol=settings.SYMBOL)
 
@@ -374,7 +372,7 @@ class FundingBot:
         def wrapped(self, *args, **kwargs):
             new_datetime = self.last_request + timedelta(seconds=settings.API_REST_INTERVAL)
 
-            wait_time = (new_datetime - datetime.now()).total_seconds()
+            wait_time = (new_datetime - datetime.utcnow()).total_seconds()
 
             if wait_time > 0:
                 sleep(wait_time)
@@ -395,7 +393,7 @@ class FundingBot:
 
             self._create_orders(orders)
 
-        self.last_request = datetime.now()
+        self.last_request = datetime.utcnow()
 
     @respect_rate_limit
     def _amend_orders(self, orders) -> None:
@@ -413,7 +411,7 @@ class FundingBot:
 
                 self._amend_orders(orders)
 
-        self.last_request = datetime.now()
+        self.last_request = datetime.utcnow()
 
     @respect_rate_limit
     def _cancel_orders(self, orders) -> None:
@@ -425,4 +423,4 @@ class FundingBot:
 
             sleep(settings.API_REST_INTERVAL)
 
-        self.last_request = datetime.now()
+        self.last_request = datetime.utcnow()
