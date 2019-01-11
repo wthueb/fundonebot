@@ -1,3 +1,5 @@
+from datetime import datetime
+from dateutil import tz
 import signal
 import schedule
 import threading
@@ -58,13 +60,22 @@ def main() -> None:
 
     signal.signal(signal.SIGTERM, bot.exit)
     signal.signal(signal.SIGINT, bot.exit)
+    
+    def convert_utc(utc_time : str) -> str:
+        utc = datetime.strptime(utc_time, '%H:%M')
 
-    schedule.every().day.at('23:50').do(half_funding, bot)
-    schedule.every().day.at('04:00').do(funding_over, bot)
-    schedule.every().day.at('07:50').do(half_funding, bot)
-    schedule.every().day.at('12:00').do(funding_over, bot)
-    schedule.every().day.at('15:50').do(half_funding, bot)
-    schedule.every().day.at('20:00').do(funding_over, bot)
+        utc = utc.replace(tzinfo=tz.tzutc())
+
+        local = utc.astimezone(tz.tzlocal())
+
+        return local.strftime('%H:%M')
+
+    schedule.every().day.at(convert_utc('23:50')).do(half_funding, bot)
+    schedule.every().day.at(convert_utc('04:00')).do(funding_over, bot)
+    schedule.every().day.at(convert_utc('07:50')).do(half_funding, bot)
+    schedule.every().day.at(convert_utc('12:00')).do(funding_over, bot)
+    schedule.every().day.at(convert_utc('15:50')).do(half_funding, bot)
+    schedule.every().day.at(convert_utc('20:00')).do(funding_over, bot)
 
     def run_scheduled() -> None:
         while True:
