@@ -41,7 +41,7 @@ def half_funding(bot: FundingBot) -> None:
 def funding_over(bot: FundingBot) -> None:
     """funding is over, exit all positions"""
 
-    sleep(3)
+    sleep(1)
     
     bot.exit_position(market=False, wait_for_fill=True)
 
