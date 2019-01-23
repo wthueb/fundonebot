@@ -1,31 +1,52 @@
 {% extends 'admin/master.html' %}
+
 {% block body %}
 {{ super() }}
+
 <div class="row-fluid">
 
     <div>
         {% if current_user.is_authenticated %}
-        <h1>fundonebot</h1>
+			<h1>fundonebot admin panel</h1>
+
+			<br>
+
+			<button class="btn" onclick="window.location.href = '/admin/settings/'">
+				change bot settings
+			</button>
+
+			<br><br>
+
+			<button class="btn" onclick="window.location.href = '/admin/user/'">
+				manage users
+			</button>
         {% else %}
-        <form method="POST" action="">
-            {{ form.hidden_tag() if form.hidden_tag }}
-            {% for f in form if f.type != 'CSRFTokenField' %}
-            <div>
-            {{ f.label }}
-            {{ f }}
-            {% if f.errors %}
-            <ul>
-                {% for e in f.errors %}
-                <li>{{ e }}</li>
-                {% endfor %}
-            </ul>
-            {% endif %}
-            </div>
-            {% endfor %}
-            <button class="btn" type="submit">Submit</button>
-        </form>
-        {{ link | safe }}
+			<form method="POST" action="">
+				{{ form.hidden_tag() if form.hidden_tag }}
+
+				{% for f in form if f.type != 'CSRFTokenField' %}
+					<div>
+						{{ f.label }}
+						{{ f }}
+
+						{% if f.errors %}
+							<ul>
+								{% for e in f.errors %}
+									<li><font color="red">{{ e }}</font></li>
+								{% endfor %}
+							</ul>
+						{% endif %}
+					</div>
+				{% endfor %}
+
+				<button class="btn" type="submit">submit</button>
+
+			</form>
+
+			{{ link | safe }}
         {% endif %}
     </div>
+
 </div>
+
 {% endblock body %}

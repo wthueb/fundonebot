@@ -1,0 +1,24 @@
+{% extends 'admin/master.html' %}
+
+{% block body %}
+{{ super() }}
+
+<div class="row-fluid">
+
+    <div>
+
+		<h3>fundonebot settings</h3>
+
+		<button class="btn" onclick="window.location.href = '/admin/settings/new/'">
+			create new configuration
+		</button>
+
+		<br><br>
+
+		<h5>current configurations:</h5>
+
+	</div>
+
+</div>
+
+{% endblock body %}

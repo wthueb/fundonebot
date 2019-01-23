@@ -1,7 +1,6 @@
 from flask import redirect, request, url_for
-import flask_admin
-from flask_admin import expose, helpers
-import flask_login as login
+from flask_admin import AdminIndexView, expose, helpers
+import flask_login
 from werkzeug.security import check_password_hash
 from wtforms import fields, form, validators
 
@@ -26,10 +25,10 @@ class LoginForm(form.Form):
         return db.session.query(user.User).filter_by(login=self.login.data).first()
 
 
-class HomeView(flask_admin.AdminIndexView):
+class HomeView(AdminIndexView):
     @expose('/')
     def index(self):
-        if not login.current_user.is_authenticated:
+        if not flask_login.current_user.is_authenticated:
             return redirect(url_for('.login_view'))
         
         return super().index()
@@ -43,9 +42,9 @@ class HomeView(flask_admin.AdminIndexView):
 
             user.update_login_time()
 
-            login.login_user(user)
+            flask_login.login_user(user)
 
-        if login.current_user.is_authenticated:
+        if flask_login.current_user.is_authenticated:
             return redirect(url_for('.index'))
 
         self._template_args['form'] = form
@@ -54,6 +53,8 @@ class HomeView(flask_admin.AdminIndexView):
 
     @expose('/logout/')
     def logout_view(self):
-        login.logout_user()
+        flask_login.current_user.update_login_time()
+
+        flask_login.logout_user()
 
         return redirect(url_for('.login_view'))
