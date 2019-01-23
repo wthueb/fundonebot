@@ -42,6 +42,8 @@ class UserView(ModelView):
 
     form_create_rules = ('login', 'password')
 
+    form_widget_args = { 'password': { 'autocomplete': 'new-password' } }
+
     can_edit = False
 
     def is_accessible(self):

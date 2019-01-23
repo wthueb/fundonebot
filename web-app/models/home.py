@@ -10,7 +10,8 @@ from models import user
 
 class LoginForm(form.Form):
     login = fields.StringField(validators=[validators.data_required()])
-    password = fields.PasswordField(validators=[validators.data_required()])
+    password = fields.PasswordField(render_kw={'autocomplete': 'new-password'},
+                                    validators=[validators.data_required()])
 
     def validate_login(self, field):
         user = self.get_user()
