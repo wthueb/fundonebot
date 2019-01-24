@@ -9,8 +9,8 @@ from base import db
 class Settings(db.Model):
     id = db.Column(db.Integer, primary_key=True)
 
-    api_key = db.Column(db.String(128), unique=True)
-    api_secret = db.Column(db.String(128), unique=True)
+    api_key = db.Column(db.String(128))
+    api_secret = db.Column(db.String(128))
   
     symbol = db.Column(db.String(10))
    
@@ -95,8 +95,10 @@ class SettingsView(BaseView):
 
     @expose('/')
     def index(self):
-        # show all active configurations
-        
+        settings = db.session.query(Settings).order_by(Settings.id).all()
+
+        self._template_args['settings'] = settings
+
         return self.render('admin/settings.html')
 
     @expose('/new/', methods=('GET', 'POST'))
@@ -104,7 +106,26 @@ class SettingsView(BaseView):
         form = SettingsForm(request.form)
 
         if helpers.validate_form_on_submit(form):
-            # add to db
+            setting = Settings()
+
+            #form.populate_obj(setting)
+
+            setting.api_key = form.api_key.data
+            setting.api_secret = form.api_secret.data
+            setting.symbol = form.symbol.data
+            setting.position_size = int(form.position_size.data)
+            setting.hedge = form.hedge.data
+
+            if setting.hedge:
+                setting.hedge_side = form.hedge_side.data
+                setting.hedge_multiplier = float(form.hedge_multiplier.data)
+
+            setting.stop_limit_multiplier = float(form.stop_limit_multiplier.data)
+            setting.stop_market_multiplier = float(form.stop_market_multiplier.data)
+
+            db.session.add(setting)
+
+            db.session.commit()
 
             return redirect(url_for('.index'))
 
@@ -114,7 +135,15 @@ class SettingsView(BaseView):
 
     @expose('/delete/', methods=('POST',))
     def delete_setting(self):
-        # buttons on each configuration to delete
-        # remove from db
+        data = request.get_json()
 
-        return redirect(url_for('.index'))
+        if 'id' not in data:
+            return '', 400
+
+        id = data['id']
+
+        db.session.query(Settings).filter(Settings.id == id).delete()
+
+        db.session.commit()
+
+        return ''

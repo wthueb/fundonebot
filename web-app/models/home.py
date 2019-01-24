@@ -23,7 +23,7 @@ class LoginForm(form.Form):
             raise validators.ValidationError('invalid password')
 
     def get_user(self):
-        return db.session.query(user.User).filter_by(login=self.login.data).first()
+        return db.session.query(user.User).filter(user.User.login==self.login.data).first()
 
 
 class HomeView(AdminIndexView):

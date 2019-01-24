@@ -9,13 +9,77 @@
 
 		<h3>fundonebot settings</h3>
 
-		<button class="btn" onclick="window.location.href = '/admin/settings/new/'">
+		<button class="btn btn-success" onclick="window.location.href = '/admin/settings/new/'">
 			create new configuration
 		</button>
 
 		<br><br>
 
 		<h5>current configurations:</h5>
+
+		<br>
+
+		{% if settings|length > 0 %}
+			<table class="table"> 
+
+				<tr>
+					<th>api key</th>
+					<th>api secret</th>
+					<th>symbol</th>
+					<th>position size</th>
+					<th>hedge</th>
+					<th>hedge side</th>
+					<th>hedge multiplier</th>
+					<th>stop limit multiplier</th>
+					<th>stop market multiplier</th>
+					<th></th>
+				</tr>
+
+				{% for setting in settings %}
+					<tr>	
+						<td>{{ setting.api_key }}</td>
+						<td>{{ setting.api_secret }}</td>
+						<td>{{ setting.symbol }}</td>
+						<td>{{ setting.position_size }}</td>
+						<td>{{ setting.hedge }}</td>
+						<td>{{ setting.hedge_side }}</td>
+						<td>{{ setting.hedge_multiplier }}</td>
+						<td>{{ setting.stop_limit_multiplier }}</td>
+						<td>{{ setting.stop_market_multiplier }}</td>
+
+						<td>
+							<button class="btn btn-warning" type="button"
+								onclick="deleteSetting({{ setting.id }});">delete</button>
+						</td>
+					</tr>
+				{% endfor %}
+
+			</table>
+		{% else %}
+			<div><font color="red">there are no active configurations</font></div>
+		{% endif %}
+
+		<script>
+			//function editSetting(id) {
+			//	var form = $('<form style="display: none;" action="/admin/settings/new/"' +
+			//		             'method="post">' +
+			//		             '<input type="text" name="id" value="' + id + '" />' +
+			//	             '</form>');
+
+			//	$('body').append(form);
+
+			//	form.submit()
+			//}
+
+			function deleteSetting(id) {
+				var xhr = new XMLHttpRequest();
+				xhr.open('POST', '/admin/settings/delete/', true);
+				xhr.setRequestHeader('content-type', 'application/json');
+				xhr.send(JSON.stringify({ id: id }));
+				
+				window.location.reload(true);
+			}
+		</script>
 
 	</div>
 
