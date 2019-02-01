@@ -29,7 +29,9 @@ class FundingBot:
 
         position = self.exchange.get_position()['currentQty']
         
-        self.hedge_exists = position != 0 and abs(position) != settings.TRADE_QUANTITY
+        self.hedge_exists = position != 0 and (abs(position) not in
+                [settings.POSITION_SIZE_BUY, settings.POSITION_SIZE_SELL])
+
         self.could_hedge = position == 0
 
         self.cancel_open_orders()

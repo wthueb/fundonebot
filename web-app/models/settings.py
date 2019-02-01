@@ -14,7 +14,8 @@ class Settings(db.Model):
   
     symbol = db.Column(db.String(10))
    
-    position_size = db.Column(db.Integer)
+    position_size_buy = db.Column(db.Integer)
+    position_size_sell = db.Column(db.Integer)
 
     hedge = db.Column(db.Boolean)
     hedge_side = db.Column(db.String(4))
@@ -30,7 +31,8 @@ class SettingsForm(form.Form):
 
     symbol = fields.StringField(validators=[validators.data_required()])
 
-    position_size = fields.StringField(validators=[validators.data_required()])
+    position_size_buy = fields.StringField(validators=[validators.data_required()])
+    position_size_sell = fields.StringField(validators=[validators.data_required()])
 
     hedge = fields.BooleanField()
     hedge_side = fields.StringField()
@@ -43,7 +45,14 @@ class SettingsForm(form.Form):
         if field.data not in ['XBTUSD', 'ETHUSD']:
             raise validators.ValidationError('symbol not supported. supported: XBTUSD, ETHUSD')
 
-    def validate_position_size(self, field):
+    def validate_position_size_buy(self, field):
+        try:
+            if int(field.data) == 0:
+                raise validators.ValidationError('position size must be a non-zero integer')
+        except ValueError:
+            raise validators.ValidationError('position size must be a non-zero integer')
+    
+    def validate_position_size_buy(self, field):
         try:
             if int(field.data) == 0:
                 raise validators.ValidationError('position size must be a non-zero integer')
@@ -113,7 +122,8 @@ class SettingsView(BaseView):
             setting.api_key = form.api_key.data
             setting.api_secret = form.api_secret.data
             setting.symbol = form.symbol.data
-            setting.position_size = int(form.position_size.data)
+            setting.position_size_buy = int(form.position_size_buy.data)
+            setting.position_size_sell = int(form.position_size_sell.data)
             setting.hedge = form.hedge.data
 
             if setting.hedge:

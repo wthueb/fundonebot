@@ -32,10 +32,12 @@ def half_funding(bot: FundingBot) -> None:
 
     if funding_rate < 0:
         side = 'Buy'
+        quantity = settings.POSITION_SIZE_BUY
     else:
         side = 'Sell'
+        quantity = settings.POSITION_SIZE_SELL
     
-    bot.enter_position(side, settings.TRADE_QUANTITY, market=False)
+    bot.enter_position(side, quantity, market=False)
 
 
 def funding_over(bot: FundingBot) -> None:
