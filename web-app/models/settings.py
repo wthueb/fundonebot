@@ -52,7 +52,7 @@ class SettingsForm(form.Form):
         except ValueError:
             raise validators.ValidationError('position size must be a non-zero integer')
     
-    def validate_position_size_buy(self, field):
+    def validate_position_size_sell(self, field):
         try:
             if int(field.data) == 0:
                 raise validators.ValidationError('position size must be a non-zero integer')
