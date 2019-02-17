@@ -79,7 +79,7 @@
 				xhr.setRequestHeader('content-type', 'application/json');
 				xhr.send(JSON.stringify({ id: id }));
 				
-				window.location.reload(true);
+                window.location.replace(window.location.pathname + window.location.search + window.location.hash);
 			}
 		</script>
 
