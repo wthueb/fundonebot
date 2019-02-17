@@ -4,12 +4,15 @@
 
 
 from hashlib import sha1
+import logging
 import os
 import shutil
 import sqlite3
 import subprocess
 from time import sleep
 
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 conn = sqlite3.connect('fundonebot.db')
 
@@ -27,7 +30,7 @@ def create_settings_str(setting) -> str:
             + "BASE_URL = 'https://www.bitmex.com/api/v1/'\n")
 
     for key in keys:
-        new_settings += key.upper() + ' = ' + setting[key] + '\n'
+        new_settings += key.upper() + ' = ' + repr(setting[key]) + '\n'
 
     new_settings += ('LOOP_INTERVAL = .5\n'
             + 'API_REST_INTERVAL = 3\n'
@@ -46,21 +49,21 @@ def run_loop() -> None:
 
         settings = [dict(zip(keys, value)) for value in values]
 
-        print('got settings from db: %s' % settings)
+        logging.info('got settings from db: %s' % settings)
 
         for setting in settings:
-            print('working on setting id: %i' % setting['id'])
+            logging.info('working on setting id: %i' % setting['id'])
 
             # use id as directory postfix (i.e. fundonebot1, fundonebot4)
             directory = os.path.join(bots_location, 'fundonebot%i/' % setting['id'])
 
-            print(' ~ directory: %s' % directory)
+            logging.info(' ~ directory: %s' % directory)
 
             service_name = 'bitmex-funding%i' % setting['id']
             service_path = '/etc/systemd/system/%s.service' % service_name
 
             if os.path.exists(directory):
-                print(' ~ directory exists, checking if settings have changed')
+                logging.info(' ~ directory exists, checking if settings have changed')
 
                 # hash current settings file
                 settings_path = os.path.join(directory, 'settings.py')
@@ -70,30 +73,30 @@ def run_loop() -> None:
 
                 old_hash = sha1(content.encode('utf-8'))
 
-                print(' ~ old hash: %s' % old_hash.hexdigest())
+                logging.info(' ~ old hash: %s' % old_hash.hexdigest())
 
                 # create and hash new settings string
-                create_settings_str(setting)
+                new_settings = create_settings_str(setting)
 
                 new_hash = sha1(new_settings.encode('utf-8'))
 
-                print(' ~ new hash: %s' % new_hash.hexdigest())
+                logging.info(' ~ new hash: %s' % new_hash.hexdigest())
 
                 # if hashes have changed, change settings & restart the bot
-                if new_hash != old_hash:
-                    print(' ~ hashes have changed, changing settings and restarting')
+                if new_hash.digest() != old_hash.digest():
+                    logging.info(' ~ hashes have changed, changing settings and restarting')
 
                     os.remove(settings_path)
 
                     with open(settings_path, 'w') as f:
                         f.write(new_settings)
 
-                    print(' ~ wrote new settings, restarting')
+                    logging.info(' ~ wrote new settings, restarting')
 
                     subprocess.run(('sudo systemctl restart %s' % service_name).split())
                     subprocess.run(('sudo systemctl enable %s' % service_name).split())
             else:
-                print(' ~ directory doesn\'t exist, creating')
+                logging.info(' ~ directory doesn\'t exist, creating')
 
                 # create directory
                 base_dir = os.path.join(bots_location, 'fundonebot/')
@@ -103,9 +106,11 @@ def run_loop() -> None:
 
                 shutil.copytree(base_dir, directory, ignore=skip_env)
 
-                print(' ~ initializing virtualenv')
+                logging.info(' ~ initializing virtualenv')
 
                 subprocess.run('virtualenv env'.split(), cwd=directory)
+
+                subprocess.run('env/bin/pip3 install -r requirements.txt'.split(), cwd=directory)
 
                 # create settings file
                 settings_str = create_settings_str(setting)
@@ -113,7 +118,7 @@ def run_loop() -> None:
                 with open(os.path.join(directory, 'settings.py'), 'w') as f:
                     f.write(settings_str)
 
-                print(' ~ wrote settings.py')
+                logging.info(' ~ wrote settings.py')
 
                 # create systemd service file
                 service_str = ('[Unit]\n'
@@ -130,34 +135,46 @@ def run_loop() -> None:
                 with open(service_path, 'w') as f:
                     f.write(service_str)
 
-                print(' ~ wrote systemd service file, starting')
+                logging.info(' ~ wrote systemd service file, starting')
 
                 # enable and start systemd service 
                 subprocess.run('sudo systemctl daemon-reload'.split())
                 subprocess.run(('sudo systemctl start %s' % service_name).split())
                 subprocess.run(('sudo systemctl enable %s' % service_name).split())
 
-                print(' ~ started systemd service')
+                logging.info(' ~ started systemd service')
 
                 with open('/home/ubuntu/.bash_aliases', 'r+') as f:
                     if 'monitor%i' % setting['id'] not in f.read():
-                        f.write("alias monitor%i='journalctl -fu bitmex-funding%i" %
+                        f.write("alias monitor%i='journalctl -fu bitmex-funding%i'" %
                                 (setting['id'], setting['id']))
 
-                        print(' ~ bash alias "monitor%i" created' % setting['id'])
+                        logging.info(' ~ bash alias "monitor%i" created' % setting['id'])
             
             last_id = setting['id']
 
-        print('last id: %i' % last_id)
+        logging.info('last id: %i' % last_id)
 
         last_id += 1
 
         while os.path.exists('/etc/systemd/system/bitmex-funding%i.service' % last_id):
-            print(' ~ stopping bitmex-funding%i' % last_id)
+            logging.info('deleting bitmex-funding%i' % last_id)
+
+            logging.info(' ~ stopping and disabling systemd service')
 
             subprocess.run(('sudo systemctl stop bitmex-funding%i' % last_id).split())
-
             subprocess.run(('sudo systemctl disable bitmex-funding%i' % last_id).split())
+
+            directory = os.path.join(bots_location, 'fundonebot%i/' % last_id)
+
+            logging.info(' ~ deleting %s' % directory)
+
+            subprocess.run(('sudo rm -rf %s' % directory).split())
+
+            logging.info(' ~ deleting service file')
+
+            subprocess.run(('sudo rm /etc/systemd/system/bitmex-funding%i.service' %
+                last_id).split())
 
             last_id += 1
 
