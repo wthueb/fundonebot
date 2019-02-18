@@ -17,8 +17,4 @@ uses https://github.com/BitMEX/sample-market-maker framework
 - `python3 strat.py`
 
 ### TODO:
-- admin panel
 - figure out commission/fees
-- rewrite so we can "hook" ws updates instead of using FundingBot.monitor
-    - get rid of sample-market-maker dependency
-	- leads to faster reactions to price changes, etc
