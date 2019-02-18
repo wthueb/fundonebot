@@ -165,7 +165,7 @@ class FundingBot:
                 avg_price = position['avgEntryPrice']
 
                 limit_delta = avg_price * settings.STOP_LIMIT_MULTIPLIER
-                market_delta = avg_price * settings.STOP_MULTIPLIER
+                market_delta = avg_price * settings.STOP_MARKET_MULTIPLIER
 
                 if quantity > 0:
                     limit_stopPx = math.to_nearest(avg_price - limit_delta, self.tick_size)
@@ -191,7 +191,7 @@ class FundingBot:
 
                     orders.append(limit_stop)
 
-                if settings.STOP_MULTIPLIER > 0:
+                if settings.STOP_MARKET_MULTIPLIER > 0:
                     market_stop = {'stopPx': market_stopPx, 'execInst': 'LastPrice,Close',
                                    'ordType': 'Stop', 'side': side}
 
