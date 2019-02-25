@@ -1,9 +1,9 @@
 from datetime import datetime, timedelta
+import logging
 import sys
 from time import sleep
 
-from market_maker.market_maker import ExchangeInterface
-from market_maker.utils import log
+from backend.bitmex import ExchangeInterface
 
 import settings
 from utils import math
@@ -11,9 +11,10 @@ from utils import math
 
 class FundingBot:
     def __init__(self) -> None:
-        self.logger = log.setup_custom_logger('fundingbot')
+        self.logger = logging.getLogger('fundonebot')
         
-        self.exchange = ExchangeInterface()
+        self.exchange = ExchangeInterface(settings.API_KEY, settings.API_SECRET,
+                testnet=settings.TESTNET)
         
         self.start_balance = self.exchange.get_margin()['marginBalance'] / 100000000
 

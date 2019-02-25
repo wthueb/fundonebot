@@ -1,17 +1,16 @@
 from datetime import datetime
 from dateutil import tz
+import logging
 import signal
 import schedule
 import threading
 from time import sleep
 
-from market_maker.utils import log
-
 from bot import FundingBot
 import settings
 
 
-logger = log.setup_custom_logger('strat')
+logger = logging.getLogger('strat')
 
 
 def half_funding(bot: FundingBot) -> None:
