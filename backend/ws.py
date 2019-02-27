@@ -81,6 +81,9 @@ class BitmexWS:
 
         self._send_command('subscribe', args)
 
+        while not set(args) <= set(self.data):
+            sleep(.1)
+
         self.symbols += [symbol]
 
     def remove_symbol(self, symbol) -> None:
