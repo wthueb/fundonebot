@@ -97,6 +97,9 @@ def run_loop() -> None:
 
                     subprocess.run(('sudo systemctl restart %s' % service_name).split())
                     subprocess.run(('sudo systemctl enable %s' % service_name).split())
+
+                subprocess.run(('sudo systemctl is-active --quiet %s || sudo systemctl restart %s' %
+                    (service_name, service_name)).split())
             else:
                 logging.info(' ~ directory doesn\'t exist, creating')
 
