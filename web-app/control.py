@@ -51,6 +51,8 @@ def run_loop() -> None:
 
         logging.info('got settings from db: %s' % settings)
 
+        last_id = 0
+
         for setting in settings:
             logging.info('working on setting id: %i' % setting['id'])
 
