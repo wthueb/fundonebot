@@ -1,24 +1,27 @@
-from hashlib import sha256
-import hmac
 import json
 import logging
 from threading import Thread
 from time import sleep, time
-import traceback
-from urllib.parse import urlparse
 
 import websocket
+
+from .auth import generate_expires, generate_signature
 
 
 class BitmexWS:
     MAX_TABLE_LEN = 200
 
     def __init__(self) -> None:
-        self.logger = logging.getLogger('ws')
+        self.logger = logging.getLogger(__name__)
+
+        self.logger.setLevel(logging.INFO)
 
         self._reset()
         
         self.symbols = set()
+
+    def __del__(self) -> None:
+        self.exit()
 
     def connect(self, api_key, api_secret, testnet=False) -> None:
         """ connect to ws with no subscriptions """
@@ -34,7 +37,10 @@ class BitmexWS:
 
         self.logger.debug('starting thread')
 
-        websocket.enableTrace(True)
+        log = logging.getLogger('websocket')
+        log.setLevel(logging.INFO)
+
+        websocket.enableTrace(False)
 
         self.ws = websocket.WebSocketApp(url, header=self._get_auth_headers(),
                                               on_open=self._on_open,
@@ -72,23 +78,22 @@ class BitmexWS:
         self.logger.info('got all necessary data, starting')
 
     def add_symbol(self, symbol) -> None:
-        # TODO: wait for partials to arrive
         if symbol in self.symbols:
-            raise ValueError('symbol already subscribed to: %s' % symbol)
+            raise ValueError('already subscribed to symbol: %s' % symbol)
 
         args = [sub + ':' + symbol for sub in ['instrument', 'quote',
                                                'trade', 'order', 'execution']]
 
         self._send_command('subscribe', args)
 
-        while not set(args) <= set(self.data):
-            sleep(.1)
+        # TODO: wait for partials
+        sleep(5)
 
-        self.symbols += [symbol]
+        self.symbols.add(symbol)
 
     def remove_symbol(self, symbol) -> None:
         if symbol not in self.symbols:
-            raise ValueError('symbol not subscribed to: %s' % symbol)
+            raise ValueError('not subscribed to symbol: %s' % symbol)
 
         args = [sub + ':' + symbol for sub in ['instrument', 'quote',
                                                'trade', 'order', 'execution']]
@@ -98,8 +103,8 @@ class BitmexWS:
         self.symbols.remove(symbol)
 
     def get_instrument(self, symbol) -> dict:
-        if symbol in self.symbols:
-            raise ValueError('symbol not subscribed to: %s' % symbol)
+        if symbol not in self.symbols:
+            raise ValueError('not subscribed to symbol: %s' % symbol)
 
         instruments = self.data['instrument']
 
@@ -122,6 +127,9 @@ class BitmexWS:
                   'mid': (bid+ask) / 2 }
 
         return ticker
+
+    def funds(self):
+        return self.data['margin'][0]
 
     def open_orders(self, prefix=None) -> list:
         orders = self.data['order']
@@ -263,6 +271,8 @@ class BitmexWS:
                 else:
                     raise Exception('unknown action: %s' % action)
         except:
+            import traceback
+
             self.logger.error(traceback.format_exc())
 
     def _on_error(self, error) -> None:
@@ -289,33 +299,8 @@ class BitmexWS:
 
         return ['api-expires: %s' % nonce,
                 'api-signature: %s' % generate_signature(
-                    self.API_SECRET, 'GET', '/realtime', nonce),
+                    self.API_SECRET, 'GET', '/realtime', nonce, ''),
                 'api-key: %s' % self.API_KEY]
-
-
-def generate_expires() -> int:
-    return int(time() + 3600)
-
-
-def generate_signature(secret, verb, url, nonce, postdict=None) -> str:
-    data = ''
-
-    if postdict:
-        data = json.dumps(postdict, separators=(',', ':'))
-    
-    parsed = urlparse(url)
-
-    path = parsed.path
-
-    if parsed.query:
-        path = path + '?' + parsed.query
-
-    message = verb + path + str(nonce) + data
-
-    signature = hmac.new(secret.encode('utf8'), message.encode('utf8'),
-            digestmod=sha256).hexdigest()
-
-    return signature
 
 
 def find_by_keys(keys, table, data):
@@ -333,7 +318,7 @@ def find_by_keys(keys, table, data):
 
 
 if __name__ == '__main__':
-    logger = logging.getLogger()
+    logger = logging.getLogger('ws')
     
     logger.setLevel(logging.DEBUG)
 

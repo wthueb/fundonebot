@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+
 import logging
 import sys
 from time import sleep
@@ -11,14 +12,16 @@ from utils import math
 
 class FundingBot:
     def __init__(self) -> None:
-        self.logger = logging.getLogger('fundonebot')
+        self.logger = logging.getLogger(__name__)
         
         self.exchange = ExchangeInterface(settings.API_KEY, settings.API_SECRET,
                 testnet=settings.TESTNET)
-        
-        self.start_balance = self.exchange.get_margin()['marginBalance'] / 100000000
 
-        self.tick_size = self.exchange.get_instrument()['tickSize']
+        self.exchange.add_symbol(settings.SYMBOL)
+        
+        self.start_balance = self.exchange.funds()['marginBalance'] / 100000000
+
+        self.tick_size = self.get_instrument()['tickSize']
 
         self.loop_count = 1
 
@@ -28,7 +31,7 @@ class FundingBot:
 
         self.limits_exist = False
 
-        position = self.exchange.get_position()['currentQty']
+        position = self.get_position()['currentQty']
         
         self.hedge_exists = position != 0 and (abs(position) not in
                 [settings.POSITION_SIZE_BUY, settings.POSITION_SIZE_SELL])
@@ -38,15 +41,16 @@ class FundingBot:
         self.cancel_open_orders()
 
     def sanity_check(self) -> None:
-        self.exchange.check_if_orderbook_empty()
+        #self.exchange.check_if_orderbook_empty()
 
-        self.exchange.check_market_open()
+        #self.exchange.check_market_open()
+        pass
 
     def print_status(self) -> None:
-        position = self.exchange.get_position()
-        ticker = self.exchange.get_ticker()
-        current_balance = self.exchange.get_margin()['marginBalance'] / 100000000
-        open_orders = self.exchange.bitmex.open_orders()
+        position = self.get_position()
+        ticker = self.get_ticker()
+        current_balance = self.exchange.funds()['marginBalance'] / 100000000
+        open_orders = self.exchange.open_orders()
 
         self.logger.info('ticker buy: %.2f USD' % ticker['buy'])
         self.logger.info('ticker sell: %.2f USD' % ticker['sell'])
@@ -112,7 +116,7 @@ class FundingBot:
         sys.stdout.flush()
 
     def get_price(self, side: str) -> float:
-        ticker = self.exchange.get_ticker()
+        ticker = self.get_ticker()
         
         if side.lower() not in ['buy', 'sell']:
             raise ValueError('invalid side passed to get_price: %s' % side)
@@ -127,9 +131,9 @@ class FundingBot:
         if there is an open order and the ticker moves, move the order
         """
         
-        ticker = self.exchange.get_ticker()
+        ticker = self.get_ticker()
         
-        open_orders = self.exchange.bitmex.open_orders()
+        open_orders = self.exchange.open_orders()
 
         to_amend = []
         
@@ -157,7 +161,7 @@ class FundingBot:
         if to_amend:
             self._amend_orders(to_amend)
 
-        position = self.exchange.get_position()
+        position = self.get_position()
 
         quantity = position['currentQty']
 
@@ -220,7 +224,7 @@ class FundingBot:
     def enter_position(self, side: str, trade_quantity: int, market=False) -> None:
         if market:
             self.logger.info('entering a position at market (%.2f): quantity: %i, side: %s' %
-                        (self.exchange.get_ticker()[side.lower()], trade_quantity, side))
+                        (self.get_ticker()[side.lower()], trade_quantity, side))
 
             order = {'type': 'Market', 'orderQty': trade_quantity, 'side': side}
         else:
@@ -239,7 +243,7 @@ class FundingBot:
         self.logger.info('exiting current position. at market: %s' %
                          ('true' if market else 'false'))
 
-        position = self.exchange.get_position()
+        position = self.get_position()
 
         quantity = position['currentQty']
 
@@ -269,7 +273,7 @@ class FundingBot:
             while True:
                 sleep(1)
 
-                postition = self.exchange.get_position()
+                postition = self.get_position()
 
                 if position['currentQty'] == 0:
                     break
@@ -277,14 +281,14 @@ class FundingBot:
         self.hedge_exists = False
 
     def hedge(self, side: str, market=False) -> None:
-        current_balance = self.exchange.get_margin()['marginBalance'] / 100000000
+        current_balance = self.exchange.funds()['marginBalance'] / 100000000
 
         self.logger.info('current balance: %.6f' % current_balance)
         
         if side not in ['Buy', 'Sell']:
             raise ValueError('side %s is not a valid side. options: Buy, Sell' % side)
         
-        ticker = self.exchange.get_ticker()
+        ticker = self.get_ticker()
 
         price = ticker[side.lower()]
 
@@ -304,16 +308,13 @@ class FundingBot:
         self.logger.info('cancelling all open orders')
 
         # saves an api request, as getting open orders is via the websocket
-        open_orders = self.exchange.bitmex.open_orders()
+        open_orders = self.exchange.open_orders()
 
         if not open_orders:
             self.logger.info(' ~ no open orders')
             return
 
-        try:
-            self.exchange.cancel_all_orders()
-        except Exception as e:
-            self.logger.error('unable to cancel orders: %s', e)
+        self._cancel_orders(open_orders)
         
         self.limits_exist = False
 
@@ -324,18 +325,18 @@ class FundingBot:
         
         #self.exit_position()
         
-        self.exchange.bitmex.exit()
+        self.exchange.exit()
 
         sys.exit()
 
     def run_loop(self) -> None:
         while True:
-            if not self.exchange.is_open():
-                self.logger.error('realtime data connection has closed, reloading')
+            #if not self.exchange.is_open():
+            #    self.logger.error('realtime data connection has closed, reloading')
 
-                self.reload()
+            #    self.reload()
 
-                continue
+            #    continue
 
             self.sanity_check()
 
@@ -366,7 +367,13 @@ class FundingBot:
         sleep(3)
 
     def get_instrument(self):
-        return self.exchange.bitmex.instrument(symbol=settings.SYMBOL)
+        return self.exchange.instrument(symbol=settings.SYMBOL)
+
+    def get_ticker(self):
+        return self.exchange.ticker(symbol=settings.SYMBOL)
+
+    def get_position(self):
+        return self.exchange.position(symbol=settings.SYMBOL)
 
     def get_funding_rate(self) -> float:
         return self.get_instrument()['fundingRate']
@@ -381,14 +388,23 @@ class FundingBot:
                 sleep(wait_time)
 
             return fn(self, *args, **kwargs)
+
         return wrapped
 
     @respect_rate_limit
     def _create_orders(self, orders) -> None:
+        for order in orders:
+            order['symbol'] = settings.SYMBOL
+
         try:
-            self.exchange.bitmex.create_bulk_orders(orders)
+            self.exchange.create_orders(orders)
         except Exception as e:
+            import traceback
+            traceback.print_exc()
+
             self.logger.warning('caught an error when requesting to the bitmex api: %s', e)
+
+            # TODO: handle specific errors
 
             self.logger.info('retrying request after 5 seconds...')
 
@@ -401,7 +417,7 @@ class FundingBot:
     @respect_rate_limit
     def _amend_orders(self, orders) -> None:
         try:
-            self.exchange.bitmex.amend_bulk_orders(orders)
+            self.exchange.amend_orders(orders)
         except Exception as e:
             self.logger.warning('caught an error when requesting to the bitmex api: %s', e)
 
@@ -420,7 +436,7 @@ class FundingBot:
     def _cancel_orders(self, orders) -> None:
         for order in orders:
             try:
-                self.exchange.cancel_order(order)
+                self.exchange.cancel_order(order['orderID'])
             except Exception as e:
                 self.logger.error('unable to cancel order: %s' % e)
 

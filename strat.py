@@ -10,7 +10,15 @@ from bot import FundingBot
 import settings
 
 
-logger = logging.getLogger('strat')
+logger = logging.getLogger()
+handler = logging.StreamHandler()
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(module)s - %(message)s')
+
+handler.setFormatter(formatter)
+
+logger.addHandler(handler)
+
+logger.setLevel(settings.LOG_LEVEL)
 
 
 def half_funding(bot: FundingBot) -> None:
@@ -90,7 +98,11 @@ def main() -> None:
     try:
         bot.run_loop()
     except Exception as e:
-        logger.error('bot exiting with exception: %s' % str(e))
+        logger.error('bot exiting with exception: %s' % e)
+
+        import traceback
+
+        traceback.print_exc()
 
         bot.exit()
 
