@@ -79,13 +79,15 @@ class BitmexWS:
         if symbol in self.symbols:
             raise ValueError('already subscribed to symbol: %s' % symbol)
 
-        args = [sub + ':' + symbol for sub in ['instrument', 'quote',
-                                               'trade', 'order', 'execution']]
+        subs = ['instrument', 'quote', 'trade', 'order', 'execution']
+
+        args = [sub + ':' + symbol for sub in subs]
 
         self._send_command('subscribe', args)
 
-        # TODO: wait for partials
-        sleep(5)
+        # TODO: properly wait for each partial
+        while not set(subs) <= set(self.data):
+            sleep(.1)
 
         self.symbols.add(symbol)
 
