@@ -1,6 +1,7 @@
 from datetime import datetime
 from dateutil import tz
 import logging
+from os import environ
 import signal
 import schedule
 import threading
@@ -18,7 +19,7 @@ handler.setFormatter(formatter)
 
 logger.addHandler(handler)
 
-logger.setLevel(settings.LOG_LEVEL)
+logger.setLevel(settings.LOG_LEVEL if 'DEBUG' not in environ else logging.DEBUG)
 
 
 def half_funding(bot: FundingBot) -> None:

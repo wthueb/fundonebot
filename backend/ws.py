@@ -1,5 +1,6 @@
 import json
 import logging
+from os import environ
 from threading import Thread
 from time import sleep, time
 
@@ -14,7 +15,7 @@ class BitmexWS:
     def __init__(self) -> None:
         self.logger = logging.getLogger(__name__)
 
-        self.logger.setLevel(logging.INFO)
+        self.logger.setLevel(logging.INFO if 'DEBUG' not in environ else logging.DEBUG)
 
         self._reset()
         
@@ -37,10 +38,7 @@ class BitmexWS:
 
         self.logger.debug('starting thread')
 
-        log = logging.getLogger('websocket')
-        log.setLevel(logging.INFO)
-
-        websocket.enableTrace(False)
+        websocket.enableTrace('DEBUG' in environ)
 
         self.ws = websocket.WebSocketApp(url, header=self._get_auth_headers(),
                                               on_open=self._on_open,
