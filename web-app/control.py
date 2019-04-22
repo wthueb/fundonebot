@@ -149,7 +149,7 @@ def run_loop() -> None:
 
                 logging.info(' ~ started systemd service')
 
-                with open('/home/ubuntu/.bash_aliases', 'r+') as f:
+                with open('/home/ubuntu/.customrc', 'r+') as f:
                     if 'monitor%i' % setting['id'] not in f.read():
                         f.write("alias monitor%i='journalctl -fu bitmex-funding%i'" %
                                 (setting['id'], setting['id']))
