@@ -3,7 +3,7 @@
 bitmex market bot
 based on funding rate, with option for hedges in between positions
 
-uses https://github.com/BitMEX/sample-market-maker framework
+uses (heavily modified) https://github.com/BitMEX/sample-market-maker framework
 
 ### notes:
 - cannot build sample-market-maker directly; there are changes to market_maker/market_maker.py, market_maker/bitmex.py, and market_maker/ws/ws_thread.py
@@ -15,9 +15,3 @@ uses https://github.com/BitMEX/sample-market-maker framework
 	- modify variables in settings.py to desired values
 - `pip3 install -r requirements.txt`
 - `python3 strat.py`
-
-### TODO:
-- figure out commission/fees
-- rewrite so we can "hook" ws updates instead of using FundingBot.monitor
-    - get rid of sample-market-maker dependency
-	- leads to faster reactions to price changes, etc
