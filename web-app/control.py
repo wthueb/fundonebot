@@ -33,10 +33,10 @@ def create_settings_str(setting) -> str:
         new_settings += key.upper() + ' = ' + repr(setting[key]) + '\n'
 
     new_settings += ('LOOP_INTERVAL = .5\n'
-            + 'API_REST_INTERVAL = 3\n'
-            + 'TIMEOUT = 10\n'
-            + 'LOG_LEVEL = logging.INFO\n'
-            + "ORDERID_PREFIX = 'mm_'\n")
+                     'API_REST_INTERVAL = 3\n'
+                     'TIMEOUT = 10\n'
+                     'LOG_LEVEL = logging.INFO\n'
+                     "ORDERID_PREFIX = 'mm_'\n")
 
     return new_settings
 
@@ -107,13 +107,13 @@ def run_loop() -> None:
                 base_dir = os.path.join(bots_location, 'fundonebot/')
         
                 def skip_env(*args):
-                    return 'env', '__pycache__'
+                    return 'env', '__pycache__', '.git'
 
                 shutil.copytree(base_dir, directory, ignore=skip_env)
 
                 logging.info(' ~ initializing virtualenv')
 
-                subprocess.run('virtualenv env'.split(), cwd=directory)
+                subprocess.run('python3 -m venv env'.split(), cwd=directory)
 
                 subprocess.run('env/bin/pip3 install -r requirements.txt'.split(), cwd=directory)
 
@@ -127,38 +127,39 @@ def run_loop() -> None:
 
                 # create systemd service file
                 service_str = ('[Unit]\n'
-                        + 'Description=bitmex market bot\n'
-                        + 'After=network.target\n\n'
-                        + '[Service]\n'
-                        + 'User=ubuntu\n'
-                        + 'WorkingDirectory=%s\n' % directory
-                        + 'ExecStart=%senv/bin/python3 %sstrat.py\n' % (directory, directory)
-                        + 'Restart=no\n\n'
-                        + '[Install]\n'
-                        + 'WantedBy=multi-user.target')
+                               'Description=bitmex market bot\n'
+                               'After=network.target\n\n'
+                               '[Service]\n'
+                               'User=ubuntu\n'
+                              f'WorkingDirectory={directory}\n'
+                              f'ExecStart={directory}env/bin/python3 {directory}strat.py\n'
+                               'Restart=no\n\n'
+                               '[Install]\n'
+                               'WantedBy=multi-user.target')
 
-                with open(service_path, 'w') as f:
-                    f.write(service_str)
+                #with open(service_path, 'w') as f:
+                #    f.write(service_str)
+
+                os.system(f'echo "{service_str}" | sudo tee -a {service_path}')
 
                 logging.info(' ~ wrote systemd service file, starting')
 
                 # enable and start systemd service 
                 subprocess.run('sudo systemctl daemon-reload'.split())
-                subprocess.run(('sudo systemctl start %s' % service_name).split())
-                subprocess.run(('sudo systemctl enable %s' % service_name).split())
+                subprocess.run((f'sudo systemctl start {service_name}').split())
+                subprocess.run((f'sudo systemctl enable {service_name}').split())
 
                 logging.info(' ~ started systemd service')
 
                 with open('/home/ubuntu/.customrc', 'r+') as f:
-                    if 'monitor%i' % setting['id'] not in f.read():
-                        f.write("alias monitor%i='journalctl -fu bitmex-funding%i'" %
-                                (setting['id'], setting['id']))
+                    if f'monitor{setting["id"]}' not in f.read():
+                        f.write(f"alias monitor{setting['id']}='journalctl -fu bitmex-funding{setting['id']}'")
 
-                        logging.info(' ~ bash alias "monitor%i" created' % setting['id'])
+                        logging.info(f' ~ bash alias "monitor{setting["id"]}" created')
             
             last_id = setting['id']
 
-        logging.info('last id: %i' % last_id)
+        logging.info(f'last id: {last_id}')
 
         last_id += 1
 
